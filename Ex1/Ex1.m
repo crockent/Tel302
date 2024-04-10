@@ -101,7 +101,7 @@ for i=1:height(phit_matrix)
     figure;
      hold on;
     for j=1:length(k)-6
-        plot(t,phit_matrix(i,:),phit_matrix(i,:));
+        %plot(t,phit_matrix(i,:),phit_matrix(i,:));
     end
     hold off;
     grid on;
