@@ -101,7 +101,9 @@ for i=1:height(phit_matrix)
     figure;
      hold on;
     for j=1:length(k)-6
-        %plot(t,phit_matrix(i,:),phit_matrix(i,:));
+       delayed_phi = delayseq(phit_matrix(i,:),k(j)*TB);
+       delayed_phi_matirx = [delayed_phi_matirx; delayed_phi];
+       plot(t,delayed_phi);
     end
     hold off;
     grid on;
@@ -129,7 +131,22 @@ for i=1:height(phit_matrix)
 
 end
 %}
-%ores mexri stigmh 7:10
+%ores mexri stigmh 9:10
+
+%C1
+N1=100;
+
+
+b= (sign(randn(1,N1))+1)/2;
+
+%C2
+X = bits_to_2pam(b);
+X_delta = 1/Ts*upsample(X, over);
+
+
+tN = [0:0.1:N1];
+figure();
+plot(tN,X_delta);
 
 
 
