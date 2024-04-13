@@ -1,6 +1,6 @@
 clear all; close all; clc
 %A1
-T=10^-3;
+T=10^-2;
 over=10;
 Ts=T/over;
 A=4;
@@ -91,18 +91,17 @@ ylabel('Amplitude');
 legend('a=0','a=0.5','a=1','c1=T/10^5');
 
 %B)
+
 k=[0:1:2*A];
-TB = 10^(-2);
-FsB = TB/over;
-delayed_phi_matirx = [];
+delayed_phi_matrix = [];
 %B1)
 %1)
 for i=1:height(phit_matrix)
     figure;
      hold on;
     for j=1:length(k)-6
-       delayed_phi = delayseq(phit_matrix(i,:),k(j)*TB);
-       delayed_phi_matirx = [delayed_phi_matirx; delayed_phi];
+       delayed_phi = delayseq(phit_matrix(i,:).',k(j)*T,Fs).';
+       delayed_phi_matrix = [delayed_phi_matrix; delayed_phi];
        plot(t,delayed_phi);
     end
     hold off;
@@ -114,24 +113,34 @@ for i=1:height(phit_matrix)
 end
 
 %2
-%{
 for i=1:height(phit_matrix)
-    figure;
-    n=i*3;
-    hold on;
-    for j=length(n)-2:length(n)
-       %product = phit_matrix(i,:).*delayed_phi_matirx(j,:);
-       % plot(t,product);
+    for j=1:length(k)-6
+        product = phit_matrix(i,:).*delayed_phi_matrix(j,:);
+        figure;
+        plot(t,product); 
+        title("phi(t)*phi(t-kT) for" + " " + "k=" + string(k(j))+ " " + "and a=" + " " +string(a(i)));
+        xlabel('Time');
+        ylabel('Amplitude');
+        grid on;
     end
-    hold off;
-    grid on;
-    title('Product of phi(t) with phi(t-kT) for a='+ string(a(i)));
-    xlabel('Time');
-    ylabel('Amplitude');
-
 end
-%}
-%ores mexri stigmh 9:10
+
+
+
+for i=1:height(phit_matrix)
+    for j=1:length(k)-5
+       delayed_phi_2 = delayseq(phit_matrix(i,:).',k(j)*T,Fs).';
+       integral = sum(phit_matrix(i,:).*delayed_phi_2)*Ts;
+       fprintf("Integral phi(t)*phi(t-kT) for" + " " + "k=" + string(k(j))+ " " + "and a=" + " " +string(a(i)) +" " +"is:"+ " " + string( integral) +'\n');
+
+    end
+  
+end
+
+ 
+
+
+
 
 %C1
 N1=100;
@@ -140,17 +149,51 @@ N1=100;
 b= (sign(randn(1,N1))+1)/2;
 
 %C2
+%a
 X = bits_to_2pam(b);
 X_delta = 1/Ts*upsample(X, over);
 
-
-tN = [0:0.1:N1];
+%b
+tN = [0:Ts:(N1*T)-Ts];
 figure();
-plot(tN,X_delta);
+stem(tN,X_delta);
+title('Delta pulse train');
+xlabel('Time');
+ylabel('Amplitude');
+grid on;
 
 
+%g
+[phi_c2,t_c2] = srrc_pulse(T,over,A,a(2));
+X_t = conv(X_delta,phi_c2)*Ts;
 
 
+t_conv = [min(tN)+min(t_c2):Ts:max(tN)+max(t_c2)];
+figure;
+plot(t_conv,X_t);
+title('Convolution of Delta pulse train with phi');
+xlabel('Time');
+ylabel('Amplitude');
+grid on;
 
+%d
+phi_flipped = phi_c2(numel(phi_c2):-1:1);
+t_flipped = t_c2(numel(t_c2):-1:1);
+Z_t = conv(X_t,phi_flipped)*Ts;
+t_conv2 = [min(t_conv)+min(t_flipped):Ts:max(t_conv)+max(t_flipped)];
+figure;
+plot(t_conv2,Z_t);
+hold on;
+stem([0:N1-1]*T,X);
+hold off;
+grid on;
+
+p= 0:Ts
+%ores mexri stigmh 12:30
+fprintf('\n');
+for i=1:N1
+    
+    fprintf("Values of symbols Vecotr X(k) for k ="+" "+string(i-1)+" "+ ":" +string(X(i))+" "+"Values of Z(kT) for k= "+" "+string(i-1)+" "+ ":" +string(Z_t(i))  +'\n');
+end
 
 
