@@ -95,7 +95,7 @@ legend('a=0','a=0.5','a=1','c1=T/10^5');
 k=[0:1:2*A];
 delayed_phi_matrix = [];
 %B1)
-%1)
+%a
 for i=1:height(phit_matrix)
     figure;
      hold on;
@@ -112,7 +112,7 @@ for i=1:height(phit_matrix)
     legend('k=0','k=1','k=2');
 end
 
-%2
+%b
 for i=1:height(phit_matrix)
     for j=1:length(k)-6
         product = phit_matrix(i,:).*delayed_phi_matrix(j,:);
@@ -189,7 +189,7 @@ hold off;
 grid on;
 
 p= 0:Ts
-%ores mexri stigmh 12:30
+%ores mexri stigmh 13:00
 fprintf('\n');
 for i=1:N1
     
