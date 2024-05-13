@@ -1,4 +1,4 @@
-function [phi, t] = srrc_pulse_shift(T, over, A, a,shift)
+function [phi, t] = srrc_pulse(T, over, A, a)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % [phi, t] = srrc_pulse(T, over, A, a)                                          %
 %                                                                               %
@@ -20,7 +20,6 @@ Ts = T/over;
 
 % Create time axis
 t = [-A*T:Ts:A*T] + 10^(-8); % in order to avoid division by zero problems at t=0.
-t = t+ shift;
 
 if (a>0 && a<=1)
    num = cos((1+a)*pi*t/T) + sin((1-a)*pi*t/T) ./ (4*a*t/T);

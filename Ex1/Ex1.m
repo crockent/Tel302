@@ -186,6 +186,9 @@ plot(t_conv2,Z_t);
 hold on;
 stem([0:N1-1]*T,X);
 hold off;
+title('Z(t)');
+xlabel('Time');
+ylabel('Amplitude');
 grid on;
 
 p= 0:Ts
