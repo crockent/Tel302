@@ -7,3 +7,6 @@ function [b] =bits_to_2pam(b)
         end
     end
 end
+
+
+
