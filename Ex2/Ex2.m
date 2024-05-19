@@ -43,7 +43,7 @@ X_delta = 1/Ts*upsample(X, over);
 t_delta = [0:Ts:(N*T)-Ts];
 
 X_t = conv(X_delta,phi)*Ts;
-t_conv = [min(t_delta)+min(t):Ts:max(t_delta)+max(t)];
+t_conv = t(1)+t_delta(1):Ts:t(end)+t_delta(end);
 
 figure;
 plot(t_conv,X_t,'r');
@@ -55,6 +55,7 @@ ylabel('Amplitude');
 S_x = (var(X)/T)*PHI_psd;
 
 %A3
+
 X_F = fftshift(fft(X_t,Nf))*Ts;
 XF_abs = abs(X_F);
 XF_psd = XF_abs.^2;
@@ -107,20 +108,6 @@ ylabel('Amplitude');
 legend("Theoretical","Tests");
 
 %A4
-
-T= 10^(-3);
-over = 10;
-Ts = T/over;
-A=4;
-a=0.5;
-[phi,t] = srrc_pulse(T,over,A,a);
-Nf=2048;
-Fs = 1/Ts;
-f_axis = linspace(-1/2,1/2-Fs/Nf,Nf);
-F_axis = Fs*f_axis;
-N=100;
-
-%A4
 b1= (sign(randn(1,N/2))+1)/2;
 b2= (sign(randn(1,N/2))+1)/2;
 
@@ -134,10 +121,10 @@ xlabel('Time');
 ylabel('Amplitude');
 
 X4_delta=1/Ts*upsample(X4, over);
-t_delta4 = [0:Ts:(N/2*T)-Ts];
+t_delta4 = [0:Ts:(N/2)*T-Ts];
 
 X4_t = conv(X4_delta,phi)*Ts;
-t_conv4 = [min(t_delta4)+min(t):Ts:max(t_delta4)+max(t)];
+t_conv4 = t(1)+t_delta4(1):Ts:t(end)+t_delta4(end);
 
 figure;
 plot(t_conv4,X4_t);
@@ -172,17 +159,18 @@ k=500;
 
 X_tests4 = zeros(k,Nf);
 for i=1:k
-    b_test4= (sign(randn(1,N))+1)/2;
-    X_test4 = bits_to_2pam(b_test4);
+    b1_test4= (sign(randn(1,N/2))+1)/2;
+    b2_test4= (sign(randn(1,N/2))+1)/2;
+    X_test4 = bits_to_4pam(b1_test4,b2_test4);
     X_delta_test4 = 1/Ts*upsample(X_test4, over);
     X_t_test4 = conv(X_delta_test4,phi)*Ts;
     X_F_test4 = fftshift(fft(X_t_test4,Nf))*Ts;
     XF_abs_test4 = abs(X_F_test4);
     XF_psd_test4 = XF_abs_test4.^2;
-    X_tests(i,:)=XF_psd_test4;
+    X_tests4(i,:)=XF_psd_test4;
 end
 
-Sx_tests4 = mean(X_tests);
+Sx_tests4 = mean(X_tests4);
 S_x4 = (var(X4)/T)*PHI_psd;
 
 figure;
@@ -194,7 +182,7 @@ grid on;
 title("Power Spectral Density");
 xlabel('Frequency');
 ylabel('Amplitude');
-legend("Theoretical","Tests");
+% legend("Theoretical","Tests");
 
 
 
@@ -216,13 +204,6 @@ F_axis = Fs*f_axis;
 PHI = fftshift(fft(phi,Nf))*Ts;
 XF_abs = abs(PHI);
 PHI_psd = XF_abs.^2;
-
-figure;
-semilogy(F_axis,PHI_psd,'k');
-grid on;
-title("Power Spectral Denstity");
-xlabel('Frequency');
-ylabel('Amplitude');
 
 N=100;
 

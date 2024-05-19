@@ -1,5 +1,6 @@
 %Emmanouil-Thomas Chatzakis 2021030061
 clear all; close all; clc
+
 %A1
 T= 10^(-3);
 over = 10;
@@ -11,7 +12,7 @@ a=0.5;
 
 Nf=2048;
 Fs = 1/Ts;
-f_axis = linspace(-0.5:1/Nf:0.5-1/Nf,Nf);
+f_axis = linspace(-1/2,1/2-Fs/Nf,Nf);
 F_axis = Fs*f_axis;
 
 PHI = fftshift(fft(phi,Nf))*Ts;
@@ -54,6 +55,23 @@ ylabel('Amplitude');
 S_x = (var(X)/T)*PHI_psd;
 
 %A3
+T= 10^(-3);
+over = 10;
+Ts = T/over;
+A=4;
+a=0.5;
+
+[phi,t] = srrc_pulse(T,over,A,a);
+
+Nf=2048;
+Fs = 1/Ts;
+f_axis = linspace(-1/2,1/2-Fs/Nf,Nf);
+F_axis = Fs*f_axis;
+
+PHI = fftshift(fft(phi,Nf))*Ts;
+XF_abs = abs(PHI);
+PHI_psd = XF_abs.^2;
+
 X_F = fftshift(fft(X_t,Nf))*Ts;
 XF_abs = abs(X_F);
 XF_psd = XF_abs.^2;
@@ -106,16 +124,27 @@ ylabel('Amplitude');
 legend("Theoretical","Tests");
 
 %A4
+
 T= 10^(-3);
 over = 10;
 Ts = T/over;
 A=4;
 a=0.5;
+
 [phi,t] = srrc_pulse(T,over,A,a);
+
 Nf=2048;
 Fs = 1/Ts;
 f_axis = (-0.5:1/Nf:0.5-1/Nf);
 F_axis = Fs*f_axis;
+
+PHI = fftshift(fft(phi,Nf))*Ts;
+XF_abs = abs(PHI);
+PHI_psd = XF_abs.^2;
+
+N=100;
+
+
 b1= (sign(randn(1,N/2))+1)/2;
 b2= (sign(randn(1,N/2))+1)/2;
 
@@ -141,7 +170,7 @@ title("Signal X(t)");
 xlabel('Time');
 ylabel('Amplitude');
 
-X_F4 = fftshift(fft(X_t,Nf))*Ts;
+X_F4 = fftshift(fft(X4_t,Nf))*Ts;
 XF_abs4 = abs(X_F4);
 XF_psd4 = XF_abs4.^2;
 
@@ -165,19 +194,20 @@ ylabel('Amplitude');
 
 k=500;
 
-X_tests4 = zeros(k,Nf);
+X_tests4 = zeros(Nf,k);
 for i=1:k
-    b_test4= (sign(randn(1,N))+1)/2;
-    X_test4 = bits_to_2pam(b_test4);
+    b1_test4= (sign(randn(1,N/2))+1)/2;
+    b2_test4= (sign(randn(1,N/2))+1)/2;
+    X_test4 = bits_to_4pam(b1_test4,b2_test4);
     X_delta_test4 = 1/Ts*upsample(X_test4, over);
     X_t_test4 = conv(X_delta_test4,phi)*Ts;
     X_F_test4 = fftshift(fft(X_t_test4,Nf))*Ts;
     XF_abs_test4 = abs(X_F_test4);
     XF_psd_test4 = XF_abs_test4.^2;
-    X_tests(i,:)=XF_psd_test4;
+    X_tests4(:,k)=XF_psd_test4;
 end
 
-Sx_tests4 = mean(X_tests);
+Sx_tests4 = mean(X_tests4);
 S_x4 = (var(X4)/T)*PHI_psd;
 
 figure;
@@ -189,7 +219,7 @@ grid on;
 title("Power Spectral Density");
 xlabel('Frequency');
 ylabel('Amplitude');
-legend("Theoretical","Tests");
+% legend("Theoretical","Tests");
 
 
 
@@ -211,13 +241,6 @@ F_axis = Fs*f_axis;
 PHI = fftshift(fft(phi,Nf))*Ts;
 XF_abs = abs(PHI);
 PHI_psd = XF_abs.^2;
-
-figure;
-semilogy(F_axis,PHI_psd,'k');
-grid on;
-title("Power Spectral Denstity");
-xlabel('Frequency');
-ylabel('Amplitude');
 
 N=100;
 
