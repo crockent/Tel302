@@ -285,123 +285,90 @@ end
 disp(['Number of bit errors: ' num2str(bits_error_num)]);
 
 %---- Part 2----%
-clear;
-close all;
-clc;
+p_error_symbol = zeros(8,1);
+p_error_s = zeros(8,1);
+p_error_bit = zeros(8,1);
+p_error_b = zeros(8,1);
 
-% Parameters
-A = 1;
-hf = 4; % Half duration of the pulse in symbol periods (positive integer)
-N = 200;
-over = 10;
-T = 0.01;
-Ts = T / over;
-a = 0.5;
-Nf = 2048;
-Fs = 1 / Ts;
-F0 = 200;
-SNRdB = 0:2:16;
-K = 1000; 
+j = 1;
 
+for SNRdb = 0:2:16
 
+    for K = 1:1000
+        variance = (10*(A^2))/(Ts*(10^(SNR/10)));
+        gaussian_noise = sqrt(variance)*randn(1,length(X_mod));
 
-% Initialize error count arrays
-symbol_errors = zeros(length(SNRdB), 1);
-bit_errors = zeros(length(SNRdB), 1);
-
-for idx = 1:length(SNRdB)
-    SNR = SNRdB(idx);
-    total_symbol_errors = 0;
-    total_bit_errors = 0;
-    
-    for k = 1:K
-        % Generate random bits
-        b = (sign(randn(1, 4 * N)) + 1) / 2;
-
-        % 3) Map bits to symbols
-        X_I = bits_to_4_PAM(b(1:2 * N), A);
-        X_Q = bits_to_4_PAM(b(2 * N + 1:4 * N), A);
-
-        % 4) Generate signal
-        [phi, t] = srrc_pulse(T, over, hf, a);
-        X_delta_I = 1 / Ts * upsample(X_I, over);
-        X_delta_Q = 1 / Ts * upsample(X_Q, over);
-        t_delta = [0:Ts:(N*T)-Ts];
-
-
-        X_I_t = conv(X_delta_I, phi) * Ts;
-        X_Q_t = conv(X_delta_Q, phi) * Ts;
-        t_conv = t(1)+t_delta(1):Ts:t(end)+t_delta(end);
-
-        % 5) Modulate the signal
-        X_I_mod = 2 * (X_I_t .* cos(2 * pi * F0 * t_conv));
-        X_Q_mod = -2 * (X_Q_t .* sin(2 * pi * F0 * t_conv));
-        X_mod = X_I_mod + X_Q_mod;
-
-        % 8) Add noise
-        variance = (10 * (A ^ 2)) / (Ts * (10 ^ (SNR / 10)));
-        gaussian_noise = sqrt(variance) * randn(1, length(X_mod));
+        % Adding noise 
         Xmod_noise = X_mod + gaussian_noise;
 
-        % 9) Demodulate the noisy signal
-        X_I_demod = Xmod_noise .* cos(2 * pi * F0 * t_conv);
-        X_Q_demod = Xmod_noise .* sin(2 * pi * F0 * t_conv);
+       X_i_demod = Xmod_noise .* cos(2*pi*F0*t_conv);
+       X_q_demod = Xmod_noise .* sin(2*pi*F0*t_conv);
 
-        % 10) Filter the demodulated signal
-        X_I_filtered = conv(X_I_demod, phi) * Ts;
-        X_Q_filtered = conv(X_Q_demod, phi) * Ts;
-
-        % 11) Sample the filtered signal
-        sampling_indices = 2 * hf * over + 1 : over : length(X_I_filtered) - 2 * hf * over;
-        X_I_sampled = X_I_filtered(sampling_indices);
-        X_Q_sampled = X_Q_filtered(sampling_indices);
-
-        % 12) Detect the symbols
-        detected_I = detect_4_PAM(X_I_sampled, A);
-        detected_Q = detect_4_PAM(X_Q_sampled, A);
-
-        % 13) Calculate symbol errors
-       total_symbol_errors=0;
+       
+       t_out = tconv(1)+t(1):Ts:tconv(end)+t(end);
         
-       for i=1:length(X_I)
-            if(X_I(i) ~= detected_I(i))
-                total_symbol_errors = total_symbol_errors +1;   
-            end
-            if(X_Q(i) ~= detected_Q(i))
-                total_symbol_errors = total_symbol_errors +1;   
-            end
-       end 
-
-        % 14) Convert detected symbols to bits
-        detected_output = [detected_I, detected_Q];
-        est_bits = PAM_4_to_bits(detected_output, A,b);
-
-        %15) Calculate bit errors
-       total_bit_errors = 0;
-        for i=1:length(b)
-            if(b(i)~=est_bits(i))
-                total_bit_errors = total_bit_errors +1;
-            end
-        end 
+       T_total = (N+4*A)*T;
+        
+        Y_i_delta = Ts*conv(Y_i, phi);
+        Y_q_delta = Ts*conv(Y_q, phi);
+        
+        
+        Y_i_k = zeros(100,1);
+        Y_q_k = zeros(100,1);
+        
+        k = 1;
+        
+        for i = 2*A*over+1:over:length(t_out)-2*A*over
+            Y_i_k(k) = Y_i_delta(i);
+            Y_q_k(k) = Y_q_delta(i);
+            k = k+1;
+        end
+        
+        Y = [Y_i_k,Y_q_k];
+        
+        
+        [est_X, est_bit_seq] = detect_PSK_16(Y);
+        
+        
+        X = [Xi_n, Xq_n];
+        num_of_symbol_errors(K) = symbol_errors(est_X, X);
+        
+        num_of_bit_errors(K) = bit_errors(est_bit_seq, bit_seq);
     end
-    symbol_errors(idx) = total_symbol_errors / (2 * N * K);
-    bit_errors(idx) = total_bit_errors / (4 * N * K);
+    
+    % Experimental error
+    p_error_symbol(j) = sum(num_of_symbol_errors)/(K*length(X));
+
+    SNR = 10^(SNRdb/10);
+    % Theoretical error
+    p_error_s(j) = 2*Q(sqrt(2*(SNR))*sin(pi/16));
+    
+    % Experimental error
+    p_error_bit(j) = sum(num_of_bit_errors)/(K*length(bit_seq));
+
+    % Theoretical error
+    p_error_b(j) = p_error_s(j)/4;
+
+    j = j+1;
+
 end
 
-% Plot results
-figure;
-semilogy(SNRdB, symbol_errors, 'r-o');
-hold on;
-semilogy(SNRdB, bit_errors, 'b-s');
-title('Error Probability vs. SNR');
-xlabel('SNR (dB)');
-ylabel('Error Probability');
-legend('Symbol Error Probability', 'Bit Error Probability');
-grid on;
+SNRdb = -2:2:24;
+figure
+semilogy(SNRdb, p_error_symbol, 'b')    
+hold on
+semilogy(SNRdb, p_error_s, 'g') 
+xlabel('SNR_d_b')
+ylabel('P^H^A^T(E_s_y_m_b_o_l)')
+grid on
 
-
-
-
+figure
+semilogy(SNRdb,p_error_bit, 'b')
+hold on
+semilogy(SNRdb,p_error_b, 'g')
+xlabel('SNR_d_b')
+ylabel('P^H^A^T(E_b_i_t)')
+grid on
 
 
 
