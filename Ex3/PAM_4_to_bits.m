@@ -1,6 +1,6 @@
+%14)
 function est_bit = PAM_4_to_bits(X, A,b)
     levels = [-3 -1 1 3] * A;
-    % Initialize an empty array to hold the estimated bits
     est_bit = zeros(1,length(b));
 
  for i = 1:length(X)

@@ -1,10 +1,13 @@
-clear;
-close all;
-clc
+
 % EXERCISE 3
 % Emmanouil-Thomas Chatzakis
 % 2021030061
 
+% RUN PART 1 AND PART 2 SEPARATELYΣ
+%%
+clear;
+close all;
+clc
 %---- Part 1----%
 A = 1;
 hf = 4; %half duration of the pulse in symbol periods (positive integer)
@@ -124,15 +127,15 @@ figure;
 
   %%6)
 X_mod = X_I_mod + X_Q_mod;
+X_psd = abs(fftshift(fft(X_mod,Nf))*Ts).^2;
+Px_F_mod = X_psd/T_total;
+
 figure;
     plot(t_conv,X_mod);
     grid on;
     title('Κυματομορφή X(t)^{mode}');
     xlabel('Χρόνος (sec)');
     ylabel('Πλάτος');  
-
-X_psd = abs(fftshift(fft(X_mod,Nf))*Ts).^2;
-Px_F_mod = X_psd/T_total;
 
 figure;
     semilogy(F_axis,Px_F_mod,'b');
@@ -152,7 +155,13 @@ Xmod_noise = X_mod + gaussian_noise;
 %9))
 
 X_I_demod = Xmod_noise .* cos(2*pi*F0*t_conv);
-X_Q_demod = Xmod_noise .* sin(2*pi*F0*t_conv);
+X_Q_demod = Xmod_noise .* (-sin(2*pi*F0*t_conv));
+
+XIdemod_psd = abs(fftshift(fft(X_I_demod,Nf))*Ts).^2;
+XQdemod_psd = abs(fftshift(fft(X_Q_demod,Nf))*Ts).^2;
+
+PxI_F_demod = XIdemod_psd / T_total;
+PxQ_F_demod = XQdemod_psd / T_total;
 
 
 figure;
@@ -169,13 +178,6 @@ grid on;
 title('Demodulated Waveform X_Q(t)');
 xlabel('Time (sec)');
 ylabel('Amplitude');
-
-XIdemod_psd = abs(fftshift(fft(X_I_demod,Nf))*Ts).^2;
-XQdemod_psd = abs(fftshift(fft(X_Q_demod,Nf))*Ts).^2;
-
-PxI_F_demod = XIdemod_psd / T_total;
-PxQ_F_demod = XQdemod_psd / T_total;
-
 
 figure;
 subplot(2, 1, 1);
@@ -200,6 +202,13 @@ X_Q_filtered = conv(X_Q_demod,phi)*Ts;
 % Time vector for the filtered signals
 t_filtered = (min(t_conv) + min(t)):Ts:(max(t_conv) + max(t));
 T_total_filtered = max(t_filtered)- min(t_filtered)+1;
+
+XI_filtered_psd = abs(fftshift(fft(X_I_filtered, Nf)) * Ts).^2;
+XQ_filtered_psd = abs(fftshift(fft(X_Q_filtered, Nf)) * Ts).^2;
+
+PxI_F_filtered = XI_filtered_psd / T_total_filtered;
+PxQ_F_filtered = XQ_filtered_psd / T_total_filtered;
+
 figure;
 subplot(2, 1, 1);
 plot(t_filtered, X_I_filtered);
@@ -214,12 +223,6 @@ grid on;
 title('Filtered Demodulated Waveform X_Q(t)');
 xlabel('Time (sec)');
 ylabel('Amplitude');
-
-XI_filtered_psd = abs(fftshift(fft(X_I_filtered, Nf)) * Ts).^2;
-XQ_filtered_psd = abs(fftshift(fft(X_Q_filtered, Nf)) * Ts).^2;
-
-PxI_F_filtered = XI_filtered_psd / T_total_filtered;
-PxQ_F_filtered = XQ_filtered_psd / T_total_filtered;
 
 figure;
 subplot(2, 1, 1);
@@ -237,14 +240,16 @@ xlabel('Frequency');
 ylabel('Amplitude');
 
 %11))
-sampling_indices = 2*hf*over+1  : over : length(X_I_filtered)-2*hf*over;
+r=1;
+for j = 2*A*over+1:over:length(t_filtered)-2*A*over
+    X_I_sampled(r) = X_I_filtered(j);
+    X_Q_sampled(r) = X_Q_filtered(j);
+    r = r+1;
+end
 
-X_I_sampled = X_I_filtered(sampling_indices);
-X_Q_sampled = X_Q_filtered(sampling_indices);
+X_sampled = [X_I_sampled , X_Q_sampled];
 
-X_sampled = [X_I_sampled, X_Q_sampled];
 
-figure;
 scatterplot(X_sampled);
 title('Scatter Plot of the Sampled Sequence');
 xlabel('In-Phase Component');
@@ -261,11 +266,8 @@ detected_output = [detected_I, detected_Q];
 
 total_symbol_errors=0;
 %13))
-for i=1:length(X_I)
-    if(X_I(i) ~= detected_I(i))
-    total_symbol_errors = total_symbol_errors +1;   
-    end
-    if(X_Q(i) ~= detected_Q(i))
+for j=1:length(X_I)
+    if(X_I(j) ~= detected_I(j)||X_Q(j) ~= detected_Q(j))
     total_symbol_errors = total_symbol_errors +1;   
     end
 end 
@@ -277,12 +279,14 @@ est_bits =  PAM_4_to_bits(detected_output,A,b);
 
 %15))
 bits_error_num = 0;
-for i=1:length(b)
-    if(b(i)~=est_bits(i))
+for j=1:length(b)
+    if(b(j)~=est_bits(j))
     bits_error_num = bits_error_num +1;
     end
 end
 disp(['Number of bit errors: ' num2str(bits_error_num)]);
+
+%%
 
 %---- Part 2----%
 clear;
@@ -301,20 +305,20 @@ Nf = 2048;
 Fs = 1 / Ts;
 F0 = 200;
 SNRdB = 0:2:16;
-K = 1000; 
+K = 200; 
 
 
 
 % Initialize error count arrays
 symbol_errors = zeros(length(SNRdB), 1);
 bit_errors = zeros(length(SNRdB), 1);
-
+total_Theoretical_symbol_errors=zeros(length(SNRdB), 1);
+total_Theoretical_bit_errors=zeros(length(SNRdB), 1);
 for idx = 1:length(SNRdB)
-    SNR = SNRdB(idx);
     total_symbol_errors = 0;
     total_bit_errors = 0;
-    
-    for k = 1:K
+    SNR = 10^(SNRdB(idx) / 10); % Convert the current SNRdB value to a scalar SNR
+    for r = 1:K
         % Generate random bits
         b = (sign(randn(1, 4 * N)) + 1) / 2;
 
@@ -327,7 +331,6 @@ for idx = 1:length(SNRdB)
         X_delta_I = 1 / Ts * upsample(X_I, over);
         X_delta_Q = 1 / Ts * upsample(X_Q, over);
         t_delta = [0:Ts:(N*T)-Ts];
-
 
         X_I_t = conv(X_delta_I, phi) * Ts;
         X_Q_t = conv(X_delta_Q, phi) * Ts;
@@ -350,61 +353,72 @@ for idx = 1:length(SNRdB)
         % 10) Filter the demodulated signal
         X_I_filtered = conv(X_I_demod, phi) * Ts;
         X_Q_filtered = conv(X_Q_demod, phi) * Ts;
+        t_filtered = (min(t_conv) + min(t)):Ts:(max(t_conv) + max(t));
 
         % 11) Sample the filtered signal
-        sampling_indices = 2 * hf * over + 1 : over : length(X_I_filtered) - 2 * hf * over;
-        X_I_sampled = X_I_filtered(sampling_indices);
-        X_Q_sampled = X_Q_filtered(sampling_indices);
+        r=1;
+        for j = 2*A*over+1:over:length(t_filtered)-2*A*over
+            X_I_sampled(r) = X_I_filtered(j);
+            X_Q_sampled(r) = X_Q_filtered(j);
+            r = r+1;
+        end
+        X_sampled = [X_I_sampled, X_Q_sampled];
+
 
         % 12) Detect the symbols
         detected_I = detect_4_PAM(X_I_sampled, A);
         detected_Q = detect_4_PAM(X_Q_sampled, A);
 
         % 13) Calculate symbol errors
-       total_symbol_errors=0;
-        
-       for i=1:length(X_I)
-            if(X_I(i) ~= detected_I(i))
-                total_symbol_errors = total_symbol_errors +1;   
+        for j = 1:length(X_I)
+            if (X_I(j) ~= detected_I(j) ||X_Q(j) ~= detected_Q(j))
+                total_symbol_errors = total_symbol_errors + 1;
             end
-            if(X_Q(i) ~= detected_Q(i))
-                total_symbol_errors = total_symbol_errors +1;   
-            end
-       end 
+        end
 
         % 14) Convert detected symbols to bits
         detected_output = [detected_I, detected_Q];
-        est_bits = PAM_4_to_bits(detected_output, A,b);
+        est_bits = PAM_4_to_bits(detected_output, A, b);
 
-        %15) Calculate bit errors
-       total_bit_errors = 0;
-        for i=1:length(b)
-            if(b(i)~=est_bits(i))
-                total_bit_errors = total_bit_errors +1;
+        % 15) Calculate bit errors
+        for j = 1:length(b)
+            if b(j) ~= est_bits(j)
+                total_bit_errors = total_bit_errors + 1;
             end
-        end 
+        end
     end
-    symbol_errors(idx) = total_symbol_errors / (2 * N * K);
-    bit_errors(idx) = total_bit_errors / (4 * N * K);
+
+    % Experimental errors
+    symbol_errors(idx) = total_symbol_errors / (K*2*length(X_I));
+    bit_errors(idx) = total_bit_errors / (K*length(b));
+
+    % Theoretical errors
+    total_Theoretical_symbol_errors(idx) = (3/2)*Q(sqrt(SNR/5));
+    total_Theoretical_bit_errors(idx) = total_Theoretical_symbol_errors(idx) / 4;
 end
 
-% Plot results
+
+% Plot symbol error probability
 figure;
 semilogy(SNRdB, symbol_errors, 'r-o');
 hold on;
-semilogy(SNRdB, bit_errors, 'b-s');
+semilogy(SNRdB, total_Theoretical_symbol_errors, 'b-s');
 title('Error Probability vs. SNR');
 xlabel('SNR (dB)');
 ylabel('Error Probability');
-legend('Symbol Error Probability', 'Bit Error Probability');
+legend('Symbol Error Probability', 'Theoretical Symbol Error Probability');
 grid on;
 
-
-
-
-
-
-
+%plot bit error probability
+figure;
+semilogy(SNRdB,bit_errors, 'r-o');
+hold on;
+semilogy(SNRdB, total_Theoretical_bit_errors, 'b-s');
+title('Error Probability vs. SNR');
+xlabel('SNR (dB)');
+ylabel('Error Probability');
+legend('Bit Error Probability', 'Theoretical Bit Error Probability');
+grid on;
 
 
 
